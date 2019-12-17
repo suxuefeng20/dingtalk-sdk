@@ -5,6 +5,7 @@ import time
 import datetime
 
 import six
+from optionaldict import optionaldict
 
 from dingtalk.core.utils import to_text
 
@@ -27,13 +28,13 @@ class Bpms(DingTalkBaseAPI):
 
         return self._top_request(
             'dingtalk.smartwork.bpms.process.copy',
-            {
+            optionaldict({
                 'agent_id': agent_id,
                 'process_code': process_code,
                 'biz_category_id': biz_category_id,
                 'process_name': process_name,
                 'description': description
-            }
+            })
         )
 
     def process_sync(self, agent_id, src_process_code, target_process_code, biz_category_id=None, process_name=None):
@@ -50,17 +51,19 @@ class Bpms(DingTalkBaseAPI):
 
         return self._top_request(
             'dingtalk.smartwork.bpms.process.sync',
-            {
+            optionaldict({
                 'agent_id': agent_id,
                 'src_process_code': src_process_code,
                 'target_process_code': target_process_code,
                 'biz_category_id': biz_category_id,
                 'process_name': process_name
-            }
+            })
         )
 
-    def processinstance_create(self, process_code, originator_user_id, dept_id, approvers, form_component_values,
-                               agent_id=None, cc_list=(), cc_start=False, cc_finish=False, approvers_v2=()):
+    def processinstance_create(
+            self, process_code, originator_user_id, dept_id, approvers=None, form_component_values=None,
+            agent_id=None, cc_list=(), cc_start=False, cc_finish=False, approvers_v2=None
+    ):
         """
         发起审批实例
 
@@ -85,28 +88,29 @@ class Bpms(DingTalkBaseAPI):
         if isinstance(approvers, (list, tuple, set)):
             approvers = ','.join(map(to_text, approvers))
         form_component_value_list = []
-        for name, value in form_component_values.items():
-            data = {'name': name}
-            if isinstance(value, (list, tuple)):
-                if len(value) > 1:
-                    data['ext_value'] = value[1]
-                value = value[0]
-            data['value'] = value
-            form_component_value_list.append(data)
+        if form_component_values:
+            for name, value in form_component_values.items():
+                data = {'name': name}
+                if isinstance(value, (list, tuple)):
+                    if len(value) > 1:
+                        data['ext_value'] = value[1]
+                    value = value[0]
+                data['value'] = value
+                form_component_value_list.append(data)
 
         return self._top_request(
             "dingtalk.oapi.processinstance.create",
-            {
+            optionaldict({
                 "process_code": process_code,
                 "originator_user_id": originator_user_id,
                 "dept_id": dept_id,
-                "form_component_values": form_component_values,
+                "form_component_values": form_component_value_list,
                 "agent_id": agent_id,
                 "approvers": approvers,
                 "cc_list": cc_list,
                 "cc_position": cc_position,
                 "approvers_v2": approvers_v2
-            },
+            }),
             result_processor=lambda x: x['process_instance_id']
         )
 
@@ -130,14 +134,14 @@ class Bpms(DingTalkBaseAPI):
             userid_list = ','.join(map(to_text, userid_list))
         return self._top_request(
             "dingtalk.oapi.processinstance.listids",
-            {
+            optionaldict({
                 "process_code": process_code,
                 "start_time": start_time,
                 "end_time": end_time,
                 "size": size,
                 "cursor": cursor,
                 "userid_list": userid_list
-            }
+            })
         )
 
     def processinstance_list(self, process_code, start_time, end_time=None, cursor=0, size=10, userid_list=()):
@@ -165,14 +169,14 @@ class Bpms(DingTalkBaseAPI):
 
         return self._top_request(
             'dingtalk.smartwork.bpms.processinstance.list',
-            {
+            optionaldict({
                 'process_code': process_code,
                 'start_time': start_time,
                 'end_time': end_time,
                 'cursor': cursor,
                 'size': size,
                 'userid_list': userid_list
-            }
+            })
         )
 
     def processinstance_get(self, process_instance_id):

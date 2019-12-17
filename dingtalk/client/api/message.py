@@ -3,6 +3,8 @@ from __future__ import absolute_import, unicode_literals
 
 import json
 
+from optionaldict import optionaldict
+
 from dingtalk.core.utils import to_text
 from six.moves.urllib.parse import urlencode
 
@@ -151,21 +153,38 @@ class Message(DingTalkBaseAPI):
         :param to_all_user: 是否发送给企业全部用户
         :return: 任务id
         """
-        userid_list = ",".join(map(to_text, userid_list))
-        dept_id_list = ",".join(map(to_text, dept_id_list))
-
+        if isinstance(userid_list, (list, tuple, set)):
+            userid_list = ",".join(map(to_text, userid_list))
+        if isinstance(dept_id_list, (list, tuple, set)):
+            dept_id_list = ",".join(map(to_text, dept_id_list))
+        if not userid_list:
+            userid_list = None
+        if not dept_id_list:
+            dept_id_list = None
         if isinstance(msg_body, BodyBase):
             msg_body = msg_body.get_dict()
         return self._top_request(
             'dingtalk.oapi.message.corpconversation.asyncsend_v2',
-            {
+            optionaldict({
                 "msg": msg_body,
                 'agent_id': agent_id,
                 'userid_list': userid_list,
                 'dept_id_list': dept_id_list,
                 'to_all_user': to_all_user
-            },
+            }),
             result_processor=lambda x: x['task_id']
+        )
+
+    def recall(self, agent_id, msg_task_id):
+        """
+        撤回工作通知消息
+
+        :param agent_id: 发送工作通知的微应用agentId
+        :param msg_task_id: 发送工作通知返回的taskId
+        """
+        return self._top_request(
+            "dingtalk.oapi.message.corpconversation.recall",
+            {"agent_id": agent_id, "msg_task_id": msg_task_id}
         )
 
     def getsendprogress(self, agent_id, task_id):
